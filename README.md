@@ -44,17 +44,39 @@ The UI action is a row in the session menu; the Host half exposes one HTTP route
 
 ## Install
 
-This is a local dsh bundle. From a dsh profile:
+### Option A — from the release package (recommended)
+
+1. Download the latest `cyberayang-dsh-ocd-savior-<version>.tgz` from the
+   [Releases](https://github.com/cyberayang/dsh-ocd-savior/releases) page.
+2. Install it as a bundle in your dsh profile, pointing at the downloaded file:
+
+   ```
+   plugin_manager  action: install_bundle  target: <absolute path to the .tgz>
+   ```
+
+   (dsh installs bundles via pnpm, which accepts a local `file:...tgz` spec —
+   no registry or URL needed.)
+3. **Restart dsh once** so the Host half (HTTP route) loads.
+
+### Option B — from source (for development)
 
 1. Clone this repo somewhere on disk.
-2. Install it as a bundle in your profile, pointing at the package directory:
+2. Install the package directory as a bundle:
 
    ```
    plugin_manager  action: install_bundle  target: <absolute path to this folder>
    ```
 
-   (Or add an `insert` entry for `@cyberayang/dsh-ocd-savior` to your profile's `cordis.patch.yml`.)
-3. **Restart dsh once** so the Host half (HTTP route) loads.
+3. **Restart dsh once** so the Host half loads.
+
+### Option C — from npm (after publishing)
+
+If this package is published to npm, `install_bundle` with just the package name
+works and pnpm fetches it automatically:
+
+```
+plugin_manager  action: install_bundle  target: @cyberayang/dsh-ocd-savior
+```
 
 ## Usage
 

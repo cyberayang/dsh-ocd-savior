@@ -1,7 +1,6 @@
 {
   "name": "@cyberayang/dsh-ocd-savior",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "OCD Savior (强迫症拯救者) — adds a permanent \"Delete session\" action to DeepSeek Harness session menus: deletes the conversation log, projection cache, and workspace references.",
   "license": "MIT",
