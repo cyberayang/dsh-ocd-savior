@@ -100,6 +100,16 @@ Open the `…` menu of any session → **OCD Savior · Delete session** → conf
 - Deleting a session that is **not currently open** removes it from the list immediately.
 - Deleting the session you are **currently viewing** may need you to switch to another session (or restart) for the row to disappear — the data is still fully deleted.
 
+## Updating
+
+DeepSeek Harness has no automatic upgrade for third-party bundles, so to get a newer version:
+
+1. **Remove** the installed bundle (`plugin_manager  action: remove_bundle  target: @cyberayang/dsh-ocd-savior`).
+2. **Install** it again the same way you did the first time (GitHub address, `.tgz`, or local dir).
+3. **Restart dsh once.**
+
+Tip: bump `version` in `package.json` and cut a new GitHub Release each time, and users can tell a new version exists from the Releases page.
+
 ## What is NOT deleted
 
 - **Companion / memory systems** (e.g. AnimaSeed / 灵芽 `soul-data/memory.sqlite`) keep any memories they distilled from conversations. This plugin only removes Harness session records. Clean those separately if you want them gone.
