@@ -1,0 +1,41 @@
+{
+  "title": "cyberayang dsh plugins",
+  "description": "DeepSeek Harness plugins by cyberayang.",
+  "plugins": [
+    {
+      "name": "@cyberayang/dsh-ocd-savior",
+      "title": {
+        "en": "OCD Savior",
+        "zh": "强迫症拯救者",
+        "zh-CN": "强迫症拯救者"
+      },
+      "description": {
+        "en": "Permanently delete DeepSeek Harness sessions (log, cache, workspace refs) from the session menu. For anyone who can't stand leftover sessions.",
+        "zh": "在会话菜单里永久删除对话记录（正文日志、缓存、工作区引用）。给看不惯残留会话的你。",
+        "zh-CN": "在会话菜单里永久删除对话记录（正文日志、缓存、工作区引用）。给看不惯残留会话的你。"
+      },
+      "author": "cyberayang",
+      "homepage": "https://github.com/cyberayang/dsh-ocd-savior",
+      "repository": {
+        "url": "https://github.com/cyberayang/dsh-ocd-savior"
+      },
+      "metadata": {
+        "keywords": ["dsh-plugin", "session", "delete", "cleanup", "ocd-savior"],
+        "labels": [],
+        "sortKeys": {}
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1730592000000,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/cyberayang/dsh-ocd-savior",
+            "commit": "94db0f99c504b8827c6626e62fbcc5f511315335"
+          },
+          "engines": {}
+        }
+      ]
+    }
+  ]
+}
