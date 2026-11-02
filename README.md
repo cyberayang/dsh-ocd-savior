@@ -95,7 +95,12 @@ plugin_manager  action: install_bundle  target: @cyberayang/dsh-ocd-savior
 
 ## Usage
 
-Open the `…` menu of any session → **OCD Savior · Delete session** → confirm **Delete permanently**.
+Each session's `…` menu has two OCD Savior actions:
+
+1. **OCD Savior · Delete session** — permanently delete this one session (body log + cache + workspace reference). Confirm with **Delete permanently**.
+2. **OCD Savior · Delete whole workspace (+ all sessions)** — permanently delete the entire workspace that owns this session **and every conversation in it**, then remove the workspace group. **The project folder on disk is NOT deleted** (your code/files stay). This cannot be undone.
+
+Notes:
 
 - Deleting a session that is **not currently open** removes it from the list immediately.
 - Deleting the session you are **currently viewing** may need you to switch to another session (or restart) for the row to disappear — the data is still fully deleted.
@@ -141,7 +146,10 @@ This software is provided "AS IS", without warranty of any kind. It performs per
 
 ## 中文说明
 
-**强迫症拯救者（OCD Savior）**——给看不惯残留会话的你。给 DeepSeek Harness 的会话 `…` 菜单增加**「删除会话」（永久）**。
+**强迫症拯救者（OCD Savior）**——给看不惯残留会话的你。给 DeepSeek Harness 的会话 `…` 菜单增加两个操作：
+
+1. **「删除会话」（永久）**——删掉这一个对话（正文日志 + 缓存 + 工作区引用）。
+2. **「删除所在工作区（含全部对话）」**——删掉该会话所属的**整个工作区**以及**里面所有对话**，并移除该工作区分组。**磁盘上的项目文件夹不会被删除**（代码/文件都保留）。不可恢复。
 
 Harness 官方只有「归档」、没有「删除」——会话存储是只追加的，侧边栏列表来自后端内存注册表，所以归档不会删磁盘数据。本插件真正删除会话记录并让它从列表消失。
 

@@ -1,5 +1,14 @@
 # Changelog — OCD Savior (强迫症拯救者)
 
+## Unreleased
+
+- Add **Delete whole workspace (+ all sessions)** action: permanently deletes every
+  session in the workspace that owns the clicked session, then removes the
+  workspace registration. Does **not** delete the project directory on disk.
+- Host half: `POST /api/session-delete/delete-workspace` (body `{ sessionId }`);
+  falls back to editing `workspace.json` directly if the workspace controller
+  cannot remove the registration.
+
 ## 0.1.0
 
 Initial release.
