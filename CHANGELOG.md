@@ -1,6 +1,6 @@
 # Changelog — OCD Savior (强迫症拯救者)
 
-## Unreleased
+## 0.2.0
 
 - Add **Delete whole workspace (+ all sessions)** action: permanently deletes every
   session in the workspace that owns the clicked session, then removes the
