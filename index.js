@@ -206,9 +206,71 @@ function sendJson(res, status, value) {
   res.end(JSON.stringify(value));
 }
 
+/**
+ * Permanently delete one session: archive (registry drop) + remove body log,
+ * projection cache, and workspace references. Returns a per-step `removed` map.
+ * Does not broadcast — callers decide.
+ */
+async function deleteSessionCore(ctx, sessionId) {
+  const dshHome = resolveDshHome();
+  const removed = {};
+
+  const wsCtl = ctx.get ? ctx.get('workspaceController') : undefined;
+  if (wsCtl && typeof wsCtl.archiveSession === 'function') {
+    try {
+      await wsCtl.archiveSession({ sessionId, stopActivity: true });
+      removed.archive = 'ok';
+    } catch (e) {
+      removed.archive = 'error: ' + (e && e.message ? e.message : String(e));
+    }
+  } else {
+    removed.archive = 'no-workspaceController';
+  }
+
+  removeSessionBody(dshHome, sessionId, removed);
+  removeProjcache(dshHome, sessionId, removed);
+  removeWorkspaceRefs(dshHome, sessionId, removed);
+  return removed;
+}
+
+function anyRemoved(removed) {
+  return removed.archive === 'ok' || Object.values(removed).some((v) => v === 'removed');
+}
+
+function broadcast(ctx, logger, sessionId) {
+  try {
+    if (typeof ctx.emit === 'function') {
+      ctx.emit('api-session/removed', sessionId);
+      ctx.emit('api-session/activity', sessionId, Date.now());
+    }
+  } catch (e) {
+    logger.warn('broadcast failed: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function readWorkspaceData(dshHome) {
+  const file = join(dshHome, 'storages', 'workspace.json');
+  if (!existsSync(file)) return undefined;
+  return readJson(file);
+}
+
+// Find { workspaceId, title, path, sessionIds } for the workspace owning sessionId.
+function findWorkspaceOfSession(data, sessionId) {
+  const ws = data?.tables?.workspaces;
+  if (!ws) return undefined;
+  for (const id of Object.keys(ws)) {
+    const w = ws[id];
+    if (Array.isArray(w?.sessionIds) && w.sessionIds.includes(sessionId)) {
+      return { workspaceId: id, title: w.title, path: w.path, sessionIds: w.sessionIds.slice() };
+    }
+  }
+  return undefined;
+}
+
 export function apply(ctx) {
   const logger = ctx.logger ? ctx.logger('session-delete') : { warn: () => {}, info: () => {} };
 
+  // ---- Route: delete a single session ----
   ctx.effect(() =>
     ctx.webServer.register({
       kind: 'exact',
@@ -229,54 +291,104 @@ export function apply(ctx) {
             return sendJson(res, 400, { ok: false, error: 'invalid sessionId' });
           }
 
-          const dshHome = resolveDshHome();
-          const removed = {};
-
-          // A) Remove from the Host registry / sidebar via archive.
-          const wsCtl = ctx.get ? ctx.get('workspaceController') : undefined;
-          if (wsCtl && typeof wsCtl.archiveSession === 'function') {
-            try {
-              await wsCtl.archiveSession({ sessionId, stopActivity: true });
-              removed.archive = 'ok';
-            } catch (e) {
-              removed.archive = 'error: ' + (e && e.message ? e.message : String(e));
-            }
-          } else {
-            removed.archive = 'no-workspaceController';
-          }
-
-          // B) Delete on-disk body log and projection cache.
-          removeSessionBody(dshHome, sessionId, removed);
-          removeProjcache(dshHome, sessionId, removed);
-          // C) Clean residual workspace references.
-          removeWorkspaceRefs(dshHome, sessionId, removed);
-
-          const anyRemoved =
-            removed.archive === 'ok' ||
-            Object.values(removed).some((v) => v === 'removed');
-          if (!anyRemoved) {
+          const removed = await deleteSessionCore(ctx, sessionId);
+          if (!anyRemoved(removed)) {
             logger.warn('delete matched nothing: ' + sessionId + ' ' + JSON.stringify(removed));
-            return sendJson(res, 404, {
-              ok: false,
-              error: 'session records not found (already deleted?)',
-              detail: removed,
-            });
+            return sendJson(res, 404, { ok: false, error: 'session records not found (already deleted?)', detail: removed });
           }
-
-          // D) Broadcast removal so connected clients refresh immediately (no restart).
-          try {
-            if (typeof ctx.emit === 'function') {
-              ctx.emit('api-session/removed', sessionId);
-              ctx.emit('api-session/activity', sessionId, Date.now());
-            }
-          } catch (e) {
-            logger.warn('broadcast failed: ' + (e && e.message ? e.message : e));
-          }
-
+          broadcast(ctx, logger, sessionId);
           logger.info('deleted session: ' + sessionId);
           return sendJson(res, 200, { ok: true, sessionId, removed });
         } catch (e) {
           logger.warn('delete failed: ' + (e && e.message ? e.message : e));
+          return sendJson(res, 500, { ok: false, error: String((e && e.message) || e) });
+        }
+      },
+    }),
+  );
+
+  // ---- Route: delete the whole workspace that owns a session (all its sessions too) ----
+  // Body: { sessionId }. Deletes every session in that workspace, then removes the
+  // workspace registration. Does NOT touch the project directory on disk.
+  ctx.effect(() =>
+    ctx.webServer.register({
+      kind: 'exact',
+      path: ROUTE + '-workspace',
+      async handler(req, res) {
+        try {
+          if (req.method !== 'POST') {
+            return sendJson(res, 405, { ok: false, error: 'method not allowed' });
+          }
+          let input;
+          try {
+            input = JSON.parse((await readBody(req)) || '{}');
+          } catch {
+            return sendJson(res, 400, { ok: false, error: 'invalid json' });
+          }
+          const sessionId = typeof input?.sessionId === 'string' ? input.sessionId.trim() : '';
+          if (!SESSION_ID_RE.test(sessionId)) {
+            return sendJson(res, 400, { ok: false, error: 'invalid sessionId' });
+          }
+
+          const dshHome = resolveDshHome();
+          const data = readWorkspaceData(dshHome);
+          const wsInfo = findWorkspaceOfSession(data, sessionId);
+          if (!wsInfo) {
+            return sendJson(res, 404, { ok: false, error: 'workspace for this session not found' });
+          }
+
+          // 1) Permanently delete every session in the workspace.
+          const results = [];
+          for (const sid of wsInfo.sessionIds) {
+            try {
+              const removed = await deleteSessionCore(ctx, sid);
+              results.push({ sessionId: sid, removed });
+              broadcast(ctx, logger, sid);
+            } catch (e) {
+              results.push({ sessionId: sid, error: String((e && e.message) || e) });
+            }
+          }
+
+          // 2) Remove the workspace registration via the official controller
+          //    (updates both memory and durable registry; keeps the directory).
+          const wsCtl = ctx.get ? ctx.get('workspaceController') : undefined;
+          let workspaceDeleted = false;
+          if (wsCtl && typeof wsCtl.delete === 'function') {
+            try {
+              await wsCtl.delete({ workspaceId: wsInfo.workspaceId });
+              workspaceDeleted = true;
+            } catch (e) {
+              logger.warn('workspace delete failed: ' + (e && e.message ? e.message : e));
+            }
+          } else {
+            // Fallback: edit workspace.json directly.
+            try {
+              const d = readWorkspaceData(dshHome);
+              if (d?.tables?.workspaces?.[wsInfo.workspaceId]) {
+                delete d.tables.workspaces[wsInfo.workspaceId];
+                if (Array.isArray(d.global?.workspaceIds)) {
+                  d.global.workspaceIds = d.global.workspaceIds.filter((x) => x !== wsInfo.workspaceId);
+                }
+                writeJsonAtomic(join(dshHome, 'storages', 'workspace.json'), d);
+                workspaceDeleted = true;
+              }
+            } catch (e) {
+              logger.warn('workspace delete fallback failed: ' + (e && e.message ? e.message : e));
+            }
+          }
+
+          logger.info('deleted workspace ' + wsInfo.workspaceId + ' (' + wsInfo.title + ') with ' + wsInfo.sessionIds.length + ' session(s)');
+          return sendJson(res, 200, {
+            ok: true,
+            workspaceId: wsInfo.workspaceId,
+            title: wsInfo.title,
+            path: wsInfo.path,
+            sessionCount: wsInfo.sessionIds.length,
+            workspaceDeleted,
+            sessions: results,
+          });
+        } catch (e) {
+          logger.warn('delete-workspace failed: ' + (e && e.message ? e.message : e));
           return sendJson(res, 500, { ok: false, error: String((e && e.message) || e) });
         }
       },
