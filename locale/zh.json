@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "title": "强迫症拯救者 OCD Savior",
+    "description": "在会话的“...”菜单里增加“删除会话”，永久删除该对话的正文日志、投影缓存并从列表移除（不可恢复）。给看不惯残留会话的你。"
+  },
+  "menu": {
+    "delete": "删除会话",
+    "confirmTitle": "删除这个会话？",
+    "confirmBody": "将永久删除“{title}”的对话记录（正文日志、缓存），并从列表移除。此操作不可恢复。",
+    "untitled": "未命名会话",
+    "confirm": "永久删除",
+    "cancel": "取消",
+    "deleting": "删除中…",
+    "deleted": "已删除",
+    "failed": "删除失败：{error}"
+  }
+}

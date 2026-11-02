@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "title": "OCD Savior",
+    "description": "Adds a permanent “Delete session” action to a session's “...” menu: deletes the conversation log and projection cache, and removes it from the list (irreversible). For anyone who can't stand leftover sessions."
+  },
+  "menu": {
+    "delete": "Delete session",
+    "confirmTitle": "Delete this session?",
+    "confirmBody": "This permanently deletes the conversation records (log and cache) of “{title}” and removes it from the list. This cannot be undone.",
+    "untitled": "Untitled session",
+    "confirm": "Delete permanently",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "deleted": "Deleted",
+    "failed": "Delete failed: {error}"
+  }
+}
