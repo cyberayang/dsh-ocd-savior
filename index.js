@@ -349,8 +349,9 @@ export function apply(ctx) {
             }
           }
 
-          // 2) Remove the workspace registration via the official controller
-          //    (updates both memory and durable registry; keeps the directory).
+          // 2) Remove the workspace registration (keeps the directory).
+          //    Prefer the official controller (updates memory + durable registry);
+          //    if it fails for any reason, fall back to editing workspace.json.
           const wsCtl = ctx.get ? ctx.get('workspaceController') : undefined;
           let workspaceDeleted = false;
           if (wsCtl && typeof wsCtl.delete === 'function') {
@@ -358,20 +359,20 @@ export function apply(ctx) {
               await wsCtl.delete({ workspaceId: wsInfo.workspaceId });
               workspaceDeleted = true;
             } catch (e) {
-              logger.warn('workspace delete failed: ' + (e && e.message ? e.message : e));
+              logger.warn('workspace delete via controller failed, falling back: ' + (e && e.message ? e.message : e));
             }
-          } else {
-            // Fallback: edit workspace.json directly.
+          }
+          if (!workspaceDeleted) {
             try {
               const d = readWorkspaceData(dshHome);
               if (d?.tables?.workspaces?.[wsInfo.workspaceId]) {
                 delete d.tables.workspaces[wsInfo.workspaceId];
-                if (Array.isArray(d.global?.workspaceIds)) {
-                  d.global.workspaceIds = d.global.workspaceIds.filter((x) => x !== wsInfo.workspaceId);
-                }
-                writeJsonAtomic(join(dshHome, 'storages', 'workspace.json'), d);
-                workspaceDeleted = true;
               }
+              if (Array.isArray(d?.global?.workspaceIds)) {
+                d.global.workspaceIds = d.global.workspaceIds.filter((x) => x !== wsInfo.workspaceId);
+              }
+              writeJsonAtomic(join(dshHome, 'storages', 'workspace.json'), d);
+              workspaceDeleted = true;
             } catch (e) {
               logger.warn('workspace delete fallback failed: ' + (e && e.message ? e.message : e));
             }
