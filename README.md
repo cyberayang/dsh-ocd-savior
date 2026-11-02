@@ -44,7 +44,23 @@ The UI action is a row in the session menu; the Host half exposes one HTTP route
 
 ## Install
 
-### Option A — from the release package (recommended)
+### Option A — one-click from GitHub (recommended)
+
+In the dsh app, open **Plugins → Add plugin**, and enter this repository:
+
+```
+cyberayang/dsh-ocd-savior
+```
+
+(or the explicit form `github:cyberayang/dsh-ocd-savior`, or the full
+`https://github.com/cyberayang/dsh-ocd-savior`). dsh resolves it via pnpm and
+installs it automatically. Then **restart dsh once** so the Host half (HTTP
+route) loads.
+
+> Requires the plugin to live in a GitHub repo whose `package.json` names it
+> `@cyberayang/dsh-ocd-savior` — which this repo does.
+
+### Option B — from the release package
 
 1. Download the latest `cyberayang-dsh-ocd-savior-<version>.tgz` from the
    [Releases](https://github.com/cyberayang/dsh-ocd-savior/releases) page.
@@ -54,11 +70,10 @@ The UI action is a row in the session menu; the Host half exposes one HTTP route
    plugin_manager  action: install_bundle  target: <absolute path to the .tgz>
    ```
 
-   (dsh installs bundles via pnpm, which accepts a local `file:...tgz` spec —
-   no registry or URL needed.)
+   (dsh installs bundles via pnpm, which accepts a local `file:...tgz` spec.)
 3. **Restart dsh once** so the Host half (HTTP route) loads.
 
-### Option B — from source (for development)
+### Option C — from source (for development)
 
 1. Clone this repo somewhere on disk.
 2. Install the package directory as a bundle:
@@ -69,7 +84,7 @@ The UI action is a row in the session menu; the Host half exposes one HTTP route
 
 3. **Restart dsh once** so the Host half loads.
 
-### Option C — from npm (after publishing)
+### Option D — from npm (after publishing)
 
 If this package is published to npm, `install_bundle` with just the package name
 works and pnpm fetches it automatically:
@@ -124,7 +139,7 @@ Harness 官方只有「归档」、没有「删除」——会话存储是只追
 
 **删除范围**：正文日志目录、投影缓存文件、缓存索引条目、`workspace.json` 里的引用（会话/归档/置顶）。删除后会触发归档并广播 `api-session/removed`，让界面即时刷新。
 
-**安装**：克隆到本地，用 `plugin_manager install_bundle` 指向本目录，然后**重启 dsh 一次**让 Host 路由生效。
+**安装（最简单）**：打开 dsh 的「插件 → 添加插件」，输入 `cyberayang/dsh-ocd-savior`，点安装，然后**重启 dsh 一次**让 Host 路由生效。（也可用 Release 里的 `.tgz` 包或指向本目录安装，见上方 Options。）
 
 **注意**：删「当前正在浏览」的会话时，可能需切到别的会话（或重启）列表才刷新，但数据一样是彻底删除的。灵芽（AnimaSeed）等独立记忆库里从对话提炼的记忆**不会**被删，需另行处理。
 
